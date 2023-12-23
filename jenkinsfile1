@@ -18,11 +18,30 @@ pipeline {
                 }
             }     
         }
-
         stage('deploy') { 
             steps {
                 sh "mvn package"
             }
         }
-  }
+        stage('Build Docker image') { 
+            steps {
+                sh 'docker build -t khadar3099/maven-project:${BUILD_NUMBER} .'
+            }
+        }
+        stage('Docker Login') {
+            steps {
+                script {
+                 withCredentials([string(credentialsId: 'dockerlogin', variable: 'dockerhubpwd')]) {
+                    sh 'docker login -u khadar3099 -p ${dockerhubpwd}'
+                    sh 'docker push khadar3099/maven-project:${BUILD_NUMBER}'
+                    }
+                }                
+            }
+        }
+        stage('Docker deploy'){
+            steps {
+                sh 'docker run -itd -p 8082:8081 khadar3099/maven-project:${BUILD_NUMBER}'
+            }
+        }
+    }
 }
